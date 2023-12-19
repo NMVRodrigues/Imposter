@@ -35,7 +35,7 @@ class vgg_block(torch.nn.Module):
 
     def __init__(self,
                  input_channels: int,
-                 first_depth: int,
+                 output_channels: int,
                  size: int = 2,
                  dimension: int = 2,
                  ):
@@ -43,14 +43,14 @@ class vgg_block(torch.nn.Module):
         """
             Args:
                 input_channels (List[int]): list of input channels for convolutions.
-                first_depth (int): number of output channels for the first convolution.
+                output_channels (int): number of output channels for the first convolution.
                 size (int, optional): number of convolution operation
                 dimension (int, optional): If the block is going to be defined in 2D or 3D, defaults to 2D.
         """
 
         super().__init__()
         self.input_channels = input_channels
-        self.first_depth = first_depth
+        self.output_channels = output_channels
         self.size = size
         self.dimension = dimension
         self.layers = torch.nn.ModuleList([])
@@ -58,24 +58,26 @@ class vgg_block(torch.nn.Module):
         if self.dimension == 2:
             for i in range(size):
                 if i == 0:
-                    self.layers.append(torch.nn.Conv2d(input_channels, first_depth, 3, padding=1))
+                    self.layers.append(torch.nn.Conv2d(self.input_channels, self.output_channels, 3, padding=1))
                     self.layers.append(torch.nn.GELU())
-                    self.layers.append(torch.nn.BatchNorm2d(first_depth))
+                    self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
                 else:
-                    self.layers.append(torch.nn.Conv2d(input_channels, first_depth*2, 3, padding=1))
+                    self.layers.append(torch.nn.Conv2d(self.output_channels, self.output_channels, 3, padding=1))
                     self.layers.append(torch.nn.GELU())
-                    self.layers.append(torch.nn.BatchNorm2d(first_depth*2))
+                    self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
+            self.layers.append(torch.nn.MaxPool2d(2, 2))
 
         else:
             for i in range(size):
                 if i == 0:
-                    self.layers.append(torch.nn.Conv3d(input_channels, first_depth, 3, padding=1))
+                    self.layers.append(torch.nn.Conv3d(self.input_channels, self.output_channels, 3, padding=1))
                     self.layers.append(torch.nn.GELU())
-                    self.layers.append(torch.nn.BatchNorm3d(first_depth))
+                    self.layers.append(torch.nn.BatchNorm3d(self.output_channels))
                 else:
-                    self.layers.append(torch.nn.Conv3d(input_channels, first_depth*2, 3, padding=1))
+                    self.layers.append(torch.nn.Conv3d(self.output_channels, self.output_channels, 3, padding=1))
                     self.layers.append(torch.nn.GELU())
-                    self.layers.append(torch.nn.BatchNorm3d(first_depth*2))
+                    self.layers.append(torch.nn.BatchNorm3d(self.output_channels * 2))
+            self.layers.append(torch.nn.MaxPool3d(2, 2))
 
 
     def forward(self,x):

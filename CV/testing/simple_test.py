@@ -1,8 +1,13 @@
 import torch
+import os
+import sys
 
-from ..lib.models.vgg import VGG
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-image = torch.rand(1,1,256,256)
+from lib.models.vgg import VGG
+
+# requires batch size for batchnorm to work
+image = torch.rand(2,1,256,256)
 
 net = VGG(spatial_dimensions=2)
 

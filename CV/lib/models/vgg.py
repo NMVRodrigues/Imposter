@@ -28,16 +28,17 @@ class VGG(torch.nn.Module):
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.channel_structure = channel_structure
+        self.convolution_structure = convolution_structure
         self.feature_extraction = feature_extraction
         self.maxpool_structure = maxpool_structure
         self.adn_fn = adn_fn
 
         self.body = torch.nn.ModuleList([])
-        self.n_channel_structure.insert(0,self.n_channels)
+        self.channel_structure.insert(0, self.n_channels)
 
         for i in range(len(convolution_structure)):
             self.body.append(vgg_block(input_channels=self.channel_structure[i],
-                                       first_depth=self.channel_structure[i+1],
+                                       output_channels=self.channel_structure[i + 1],
                                        size=self.convolution_structure[i],
                                        dimension=self.spatial_dimensions
                                        )
@@ -53,7 +54,7 @@ class VGG(torch.nn.Module):
         self.classification_layer = torch.nn.Sequential(
             GlobalPooling(),
             MLP(
-                512,
+                channel_structure[-1],
                 final_n,
                 classification_structure,
                 adn_fn=get_adn_fn(1, "batch", "gelu"),
