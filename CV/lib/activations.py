@@ -1,0 +1,28 @@
+import torch
+
+activation_factory = {
+    "identity": torch.nn.Identity,
+    "elu": torch.nn.ELU,
+    "hard_shrink": torch.nn.Hardshrink,
+    "hard_tanh": torch.nn.Hardtanh,
+    "leaky_relu": torch.nn.LeakyReLU,
+    "logsigmoid": torch.nn.LogSigmoid,
+    "gelu": torch.nn.GELU,
+    "prelu": torch.nn.PReLU,
+    "relu": torch.nn.ReLU,
+    "relu6": torch.nn.ReLU6,
+    "rrelu": torch.nn.RReLU,
+    "selu": torch.nn.SELU,
+    "celu": torch.nn.CELU,
+    "sigmoid": torch.nn.Sigmoid,
+    "softplus": torch.nn.Softplus,
+    "soft_shrink": torch.nn.Softshrink,
+    "softsign": torch.nn.Softsign,
+    "tanh": torch.nn.Tanh,
+    "tanh_shrink": torch.nn.Tanhshrink,
+    "threshold": torch.nn.Threshold,
+    "softmin": torch.nn.Softmin,
+    "softmax": torch.nn.Softmax,
+    "logsoftmax": torch.nn.LogSoftmax,
+    "swish": torch.nn.SiLU,
+}
