@@ -21,7 +21,7 @@ class VGG(torch.nn.Module):
                  channel_structure: List[int] = [64,128,256,512,512],
                  convolution_structure: List[int] = [2,2,3,3,3],
                  classification_structure: List[int] = [512, 512, 512],
-                 ):
+                 ) -> torch.nn.Module :
         super().__init__()
 
         self.spatial_dimensions = spatial_dimensions
@@ -95,3 +95,30 @@ class VGG(torch.nn.Module):
             return x
 
         return self.classification_layer(x)
+    
+
+def _make_vgg(params):
+    return VGG(**params)
+
+
+def vgg16(spatial_dimensions: int = 2,
+          n_channels: int = 1,
+          n_classes: int = 2,
+          feature_extraction = None,
+          maxpool_structure = None,
+          adn_fn = None
+          ) -> VGG : 
+    
+    params = {
+        'spatial_dimensions': spatial_dimensions,
+        'n_channels': n_channels,
+        'n_classes': n_classes,
+        'feature_extraction' : None,
+        'maxpool_structure' : None,
+        'adn_fn' : None,
+        'channel_structure': [64,128,256,512,512],
+        'convolution_structure': [2,2,3,3,3],
+        'classification_structure':[512, 512, 512],
+    }
+
+    return _make_vgg(params)

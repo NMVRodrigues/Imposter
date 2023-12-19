@@ -1,5 +1,7 @@
 import torch
 
+from ..activations import activation_factory
+
 class GlobalPooling(torch.nn.Module):
     def __init__(self, mode: str = "max"):
         """Wrapper for average and maximum pooling
@@ -38,6 +40,7 @@ class vgg_block(torch.nn.Module):
                  output_channels: int,
                  size: int = 2,
                  dimension: int = 2,
+                 act: str = 'gelu',
                  ):
 
         """
@@ -46,6 +49,7 @@ class vgg_block(torch.nn.Module):
                 output_channels (int): number of output channels for the first convolution.
                 size (int, optional): number of convolution operation
                 dimension (int, optional): If the block is going to be defined in 2D or 3D, defaults to 2D.
+                act (str, optional): Activation function to use, defaults to gelu.
         """
 
         super().__init__()
@@ -55,15 +59,17 @@ class vgg_block(torch.nn.Module):
         self.dimension = dimension
         self.layers = torch.nn.ModuleList([])
 
+        self.act = activation_factory[act]
+
         if self.dimension == 2:
             for i in range(size):
                 if i == 0:
                     self.layers.append(torch.nn.Conv2d(self.input_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(torch.nn.GELU())
+                    self.layers.append(self.act)
                     self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
                 else:
                     self.layers.append(torch.nn.Conv2d(self.output_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(torch.nn.GELU())
+                    self.layers.append(self.act)
                     self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
             self.layers.append(torch.nn.MaxPool2d(2, 2))
 
@@ -71,11 +77,11 @@ class vgg_block(torch.nn.Module):
             for i in range(size):
                 if i == 0:
                     self.layers.append(torch.nn.Conv3d(self.input_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(torch.nn.GELU())
+                    self.layers.append(self.act)
                     self.layers.append(torch.nn.BatchNorm3d(self.output_channels))
                 else:
                     self.layers.append(torch.nn.Conv3d(self.output_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(torch.nn.GELU())
+                    self.layers.append(self.act)
                     self.layers.append(torch.nn.BatchNorm3d(self.output_channels * 2))
             self.layers.append(torch.nn.MaxPool3d(2, 2))
 

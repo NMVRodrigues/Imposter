@@ -1,2 +1,2 @@
 ## Imposter
-I was (am) having trouble keeping up and understanding several pytorch frameworks, so I made this repo to learn them from scratch and hopefully feel less of an imposter.
+This repo is a small pet project to learn different areas, implement different models, and work with different frameworks, in order to hopefully mitigate the intrusive imposter syndrome.
