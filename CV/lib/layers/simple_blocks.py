@@ -65,11 +65,11 @@ class vgg_block(torch.nn.Module):
             for i in range(size):
                 if i == 0:
                     self.layers.append(torch.nn.Conv2d(self.input_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(self.act)
+                    self.layers.append(self.act())
                     self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
                 else:
                     self.layers.append(torch.nn.Conv2d(self.output_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(self.act)
+                    self.layers.append(self.act())
                     self.layers.append(torch.nn.BatchNorm2d(self.output_channels))
             self.layers.append(torch.nn.MaxPool2d(2, 2))
 
@@ -77,11 +77,11 @@ class vgg_block(torch.nn.Module):
             for i in range(size):
                 if i == 0:
                     self.layers.append(torch.nn.Conv3d(self.input_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(self.act)
+                    self.layers.append(self.act())
                     self.layers.append(torch.nn.BatchNorm3d(self.output_channels))
                 else:
                     self.layers.append(torch.nn.Conv3d(self.output_channels, self.output_channels, 3, padding=1))
-                    self.layers.append(self.act)
+                    self.layers.append(self.act())
                     self.layers.append(torch.nn.BatchNorm3d(self.output_channels * 2))
             self.layers.append(torch.nn.MaxPool3d(2, 2))
 
