@@ -3,6 +3,7 @@ import sys
 import torch
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 from rich.progress import track
 from torch.utils.data import DataLoader
@@ -18,12 +19,12 @@ seed = 42
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 transform = transforms.Compose([
-     transforms.Resize((224,224)),
-     transforms.ToTensor(),
-     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    transforms.ConvertImageDtype(torch.float32),
+    transforms.Resize((32,32), antialias=True),
+    #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-dataset = ClassificationDataset(os.path.join('..\\Datasets', 'CV', 'animals10', 'annotations.csv'), transform=transform)
+dataset = ClassificationDataset(os.path.join('../Datasets', 'CV', 'animals10', 'annotations.csv'), label_encoding=True, transform=transform)
 
 # Creating data indices for training and validation splits:
 dataset_size = len(dataset)
@@ -38,10 +39,10 @@ train_indices, val_indices = indices[split:], indices[:split]
 train_sampler = SubsetRandomSampler(train_indices)
 valid_sampler = SubsetRandomSampler(val_indices)
 
-train_loader = torch.utils.data.DataLoader(dataset, batch_size=32, sampler=train_sampler)
-validation_loader = torch.utils.data.DataLoader(dataset, batch_size=32, sampler=valid_sampler)
+train_loader = torch.utils.data.DataLoader(dataset, batch_size=64, sampler=train_sampler)
+validation_loader = torch.utils.data.DataLoader(dataset, batch_size=64, sampler=valid_sampler)
 
-model = vgg16()
+model = vgg16(n_channels=3, n_classes=10)
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -55,7 +56,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 # Train the model
 for epoch in track(range(10), description='Training...'):
     running_loss = 0.0
-    for i, (images, labels) in enumerate(train_loader):
+    for i, (images, labels) in tqdm(enumerate(train_loader), total=len(train_loader)):
         images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
