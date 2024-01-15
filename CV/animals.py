@@ -3,7 +3,7 @@ import sys
 import torch
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
+from torchmetrics import Accuracy, FBetaScore, MetricCollection
 
 from rich.progress import track
 from torch.utils.data import DataLoader
@@ -12,6 +12,9 @@ from torchvision import transforms
 
 from lib.models.vgg import *
 from datasets import ClassificationDataset
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from utils.generate_metrics import cv_metrics
 
 validation_split = .2
 shuffle_dataset = True
@@ -49,30 +52,68 @@ loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 
 
-# Define the number of accumulation steps
+# Define a torchmetrics MetricCollection dict of accuracy and fbetascore
+metrics = cv_metrics(n_classes=10, device=device)
+
 
 NUM_ACCUMULATION_STEPS = 1
 
 # Train the model
-for epoch in range(10):
+for epoch in range(25):
     running_loss = 0.0
-    for idx, (images, labels) in track(enumerate(train_loader), description=f'Training epoch {epoch}', total=len(train_loader)):
+    running_acc = 0.0
+    metrics['train'].reset()
+    metrics['val'].reset()
+    # Make sure gradient tracking is on
+    model.train(True)
+
+    for idx, (images, labels) in track(enumerate(train_loader), description=f'Training epoch {epoch}',
+                                       total=len(train_loader)):
         images, labels = images.to(device), labels.to(device)
 
         outputs = model(images)
         loss = loss_fn(outputs, labels)
-        loss = loss / NUM_ACCUMULATION_STEPS
+        running_loss += loss / NUM_ACCUMULATION_STEPS
 
-        predictions = torch.softmax(outputs,1)
-        predicted_classes = torch.argmax(predictions, 1)
-
-        accuracy = (predicted_classes == labels).sum().float() / float(labels.size(0))
+        metrics_train = metrics['train'](outputs, labels)
 
         loss.backward()
+
         if ((idx + 1) % NUM_ACCUMULATION_STEPS == 0) or (idx + 1 == len(train_loader)):
-            # Update Optimizer
             optimizer.step()
             optimizer.zero_grad()
 
+        # Set the model to evaluation mode, disabling dropout and using population
+        # statistics for batch normalization.
+    model.eval()
+
+    # Disable gradient computation and reduce memory consumption.
+    with torch.no_grad():
+        for idx, (images, labels) in track(enumerate(validation_loader), description=f'Validating...', total=len(validation_loader)):
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            val_loss = loss_fn(outputs, labels)
+            metrics_train = metrics['val'](outputs, labels)
+
     print(
-        "Epoch {} - Loss: {:.4f} - Accuracy: {:.4f}".format(epoch, loss.item(), accuracy))
+        "Epoch {}    - Loss: {:.4f} - Accuracy: {:.4f} - F1: {:.4f} - Pr: {:.4f} - Rc: {:.4f} - AUC: {:.4f} - CalErr: {:.4f}".format(
+            epoch,
+            running_loss / len(train_loader),
+            metrics['train']['Acc'].compute(),
+            metrics['train']['F1'].compute(),
+            metrics['train']['Pr'].compute(),
+            metrics['train']['Rc'].compute(),
+            metrics['train']['AUC'].compute(),
+            metrics['train']['CalErr'].compute(),
+        ))
+
+    print(
+        "Validation - Loss: {:.4f} - Accuracy: {:.4f} - F1: {:.4f} - Pr: {:.4f} - Rc: {:.4f} - AUC: {:.4f} - CalErr: {:.4f}".format(
+            val_loss,
+            metrics['val']['Acc'].compute(),
+            metrics['val']['F1'].compute(),
+            metrics['val']['Pr'].compute(),
+            metrics['val']['Rc'].compute(),
+            metrics['val']['AUC'].compute(),
+            metrics['val']['CalErr'].compute(),
+        ))
