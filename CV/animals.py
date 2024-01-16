@@ -15,11 +15,13 @@ from datasets import ClassificationDataset
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from utils.generate_metrics import cv_metrics
+from utils.checkpointing import checkpoint, resume
 
 validation_split = .2
 shuffle_dataset = True
 seed = 42
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+lr = 1e-4
 
 transform = transforms.Compose([
     transforms.ConvertImageDtype(torch.float32),
@@ -49,7 +51,7 @@ model = vgg16(n_channels=3, n_classes=10).to(device)
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
 
 # Define a torchmetrics MetricCollection dict of accuracy and fbetascore
@@ -58,10 +60,11 @@ metrics = cv_metrics(n_classes=10, device=device)
 
 NUM_ACCUMULATION_STEPS = 1
 
+BEST_METRIC = 0
+
 # Train the model
 for epoch in range(25):
     running_loss = 0.0
-    running_acc = 0.0
     metrics['train'].reset()
     metrics['val'].reset()
     # Make sure gradient tracking is on
@@ -117,3 +120,9 @@ for epoch in range(25):
             metrics['val']['AUC'].compute(),
             metrics['val']['CalErr'].compute(),
         ))
+
+    # convnext-0.00001_fold1_best_epoch=6_V_AUC=0.695
+    checkpoint(model, os.path.join('checkpoints', f"vgg-{float(lr)}-epoch={epoch}.pth"))
+    if metrics['val']['AUC'].compute() > BEST_METRIC:
+        BEST_METRIC = metrics['val']['AUC'].compute()
+        checkpoint(model, os.path.join('checkpoints', f"vgg-{float(lr)}-best_epoch={epoch}_V_AUC={BEST_METRIC:.4f}.pth"))
